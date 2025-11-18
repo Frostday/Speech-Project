@@ -13,4 +13,4 @@ export HF_DATASETS_CACHE="$HF_HOME/datasets"
 export TRANSFORMERS_CACHE="$HF_HOME/transformers"
 mkdir -p "$HUGGINGFACE_HUB_CACHE" "$HF_DATASETS_CACHE" "$TRANSFORMERS_CACHE"
 
-. /ocean/projects/cis250187p/dgarg2/espnet/tools/activate_python.sh && python /ocean/projects/cis250187p/dgarg2/project/baseline.py
+. /ocean/projects/cis250187p/dgarg2/espnet/tools/activate_python.sh && python /ocean/projects/cis250187p/dgarg2/Speech-Project/baseline/baseline.py

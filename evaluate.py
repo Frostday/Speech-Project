@@ -44,7 +44,7 @@ def wer(ref, hyp):
     return wer_value
 
 
-df = pd.read_csv("baseline.csv")
+df = pd.read_csv("baseline/baseline.csv")
 print(len(df))
 
 pred_asr = df['ASR Pred'].tolist()
