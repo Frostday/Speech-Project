@@ -1,2 +1,5 @@
 baseline/output.log
 baseline/output.err
+owsm_finetuning/output.log
+owsm_finetuning/output.err
+owsm_finetuning/exp/
