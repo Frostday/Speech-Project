@@ -44,7 +44,7 @@ def wer(ref, hyp):
     return wer_value
 
 
-df = pd.read_csv("baseline/baseline.csv")
+df = pd.read_csv("baseline.csv")
 print(len(df))
 
 pred_asr = df['ASR Pred'].tolist()
@@ -61,3 +61,19 @@ print("ASR ref ASR pred WER:", sum(wers_1) / len(wers_1))
 print("ASR ref LLM pred WER:", sum(wers_2) / len(wers_2))
 print("LLM ref ASR pred WER:", sum(wers_3) / len(wers_3))
 print("LLM ref LLM pred WER:", sum(wers_4) / len(wers_4))
+
+# cleaned_pred_llm = []
+# for text in pred_llm:
+#     if "revised version:" in text.lower():
+#         text = text.split("revised version:")[-1].strip()
+#     if "Changes made:" in text:
+#         text = text.split("Changes made:")[0].strip()
+#     cleaned_pred_llm.append(text)
+# pred_llm = cleaned_pred_llm
+# wer = [wer(ref_llm[i], pred_llm[i]) for i in range(len(ref_llm)) if ref_llm[i] != "NOT FOUND"]
+# for i in range(len(ref_llm)):
+#     if ref_llm[i] != "NOT FOUND" and (len(ref_llm[i])-len(pred_llm[i]) >= 30 or len(ref_llm[i])-len(pred_llm[i]) <= -30 or "\n" in pred_llm[i]):
+#         # print("REF:", ref_llm[i])
+#         # print("PRED:", pred_llm[i])
+#         pred_llm[i] = pred_asr[i]
+# print("Cleaned up LLM responses:", sum(wer) / len(wer))
