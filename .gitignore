@@ -6,6 +6,7 @@ olmo_finetuning/output.log
 olmo_finetuning/output.err
 olmo_finetuning/output_pred.log
 olmo_finetuning/output_pred.err
+olmo_finetuning/olmo_asr_correction_lora
 
 owsm_ctc_finetuning/output.log
 owsm_ctc_finetuning/output.err
