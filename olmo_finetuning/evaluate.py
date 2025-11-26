@@ -44,25 +44,15 @@ def wer(ref, hyp):
     return wer_value
 
 
-df_original = pd.read_csv("/ocean/projects/cis250187p/dgarg2/Speech-Project/baseline/baseline.csv")
-print(len(df_original))
-
-df = pd.read_csv("/ocean/projects/cis250187p/dgarg2/Speech-Project/owsm_ctc_finetuning/test_predictions.csv")
+df = pd.read_csv("/ocean/projects/cis250187p/dgarg2/Speech-Project/olmo_finetuning/finetuned_olmo.csv")
 print(len(df))
 
-df = pd.merge(df_original, df, on="File-id", how="inner")
-print(len(df))
-
-# print(df["PREDICTED"])
-df["PREDICTED"] = df["PREDICTED"].str.split(n=1).str[1].fillna("")
-# print(df["PREDICTED"])
-
-pred_asr = df["PREDICTED"].tolist()
+pred_llm = df["Finetuned LLM Pred"].tolist()
 ref_asr = df["ASR Reference"].tolist()
 ref_llm = df["LLM Reference"].tolist()
 
-wer_vals = [wer(ref_asr[i], pred_asr[i]) for i in range(len(ref_asr)) if ref_asr[i] != "NOT FOUND"]
+wer_vals = [wer(ref_asr[i], pred_llm[i]) for i in range(len(ref_asr)) if ref_asr[i] != "NOT FOUND"]
 print("WER (ASR):", sum(wer_vals) / len(wer_vals))
 
-wer_vals = [wer(ref_llm[i], pred_asr[i]) for i in range(len(ref_llm)) if ref_llm[i] != "NOT FOUND"]
+wer_vals = [wer(ref_llm[i], pred_llm[i]) for i in range(len(ref_llm)) if ref_llm[i] != "NOT FOUND"]
 print("WER (Corrected):", sum(wer_vals) / len(wer_vals))

@@ -47,14 +47,14 @@ def wer(ref, hyp):
 df_original = pd.read_csv("/ocean/projects/cis250187p/dgarg2/Speech-Project/baseline/baseline.csv")
 print(len(df_original))
 
-df = pd.read_csv("/ocean/projects/cis250187p/dgarg2/Speech-Project/owsm_ctc_finetuning/test_predictions.csv")
+df = pd.read_csv("/ocean/projects/cis250187p/dgarg2/Speech-Project/owsm_finetuning/test_predictions.csv")
 print(len(df))
 
 df = pd.merge(df_original, df, on="File-id", how="inner")
 print(len(df))
 
 # print(df["PREDICTED"])
-df["PREDICTED"] = df["PREDICTED"].str.split(n=1).str[1].fillna("")
+# df["PREDICTED"] = df["PREDICTED"].str.split(n=1).str[1].fillna("")
 # print(df["PREDICTED"])
 
 pred_asr = df["PREDICTED"].tolist()

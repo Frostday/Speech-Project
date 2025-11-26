@@ -8,23 +8,26 @@ import json
 import glob
 import os
 import pandas as pd
-from espnet2.bin.s2t_inference_ctc import Speech2Text as CTCInfer
 from tqdm import tqdm
+
+from espnet2.bin.s2t_inference import Speech2Text
 
 print("Successfully imported espnet ez")
 print("ESPnet version: ", espnet.__version__)
 
-FINETUNE_MODEL = "espnet/owsm_ctc_v4_1B"
+FINETUNE_MODEL = "espnet/owsm_v4_medium_1B"
 owsm_language = "<eng>"
-MODEL_CHECKPOINT = "/ocean/projects/cis250187p/dgarg2/Speech-Project/owsm_ctc_finetuning/exp/finetune/5epoch.pth"
+
+MODEL_CHECKPOINT = "/ocean/projects/cis250187p/dgarg2/Speech-Project/owsm_finetuning/exp/finetune/5epoch.pth"
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
-pretrained_model = CTCInfer.from_pretrained(
+# Base pretrained model (for tokenizer, config, and as a backbone for loading ckpt)
+pretrained_model = Speech2Text.from_pretrained(
     FINETUNE_MODEL,
     device=DEVICE,
     dtype="float32",
     lang_sym=owsm_language,
-    task_sym='<asr>'
+    beam_size=10,
 )
 
 pretrain_config = vars(pretrained_model.s2t_train_args)
@@ -34,10 +37,11 @@ converter = pretrained_model.converter
 def tokenize(text):
     return np.array(converter.tokens2ids(tokenizer.text2tokens(text)))
 
-# Paths for data and annotations
+
 base_data_path = "/ocean/projects/cis250187p/shared/speech_and_improve_corpus/sandi-corpus-2025"
 eval_flac_path = f"{base_data_path}/data/flac/eval/eval-data-release-20250327/sandi2025-challenge/data/flac/eval"
 eval_annotations = f"{base_data_path}/reference-materials/annotations/eval-gec-ref.json"
+
 
 def load_annotations(annotation_path):
     """Load annotations from JSON file."""
@@ -99,12 +103,11 @@ def create_dataset_from_flac(flac_dir, annotation_dict):
     
     return dataset_items
 
-# Load annotations
+
 print("Loading annotations...")
 eval_ann_dict = load_annotations(eval_annotations)
 print(f"Loaded {len(eval_ann_dict)} eval annotations")
 
-# Create eval dataset from FLAC files
 print("Loading eval audio files...")
 eval_items = create_dataset_from_flac(eval_flac_path, eval_ann_dict)
 print(f"Loaded {len(eval_items)} eval audio files")
@@ -121,25 +124,25 @@ def items_to_dataset(items):
 
 eval_hf = items_to_dataset(eval_items)
 
-# Data info for test (includes raw text)
+
 test_data_info = {
-    "prefix": lambda d, lang_task_tokens=tokenize(f"{owsm_language}<asr>")[:2].copy(): lang_task_tokens.copy(),
-    "speech": lambda d: d["speech"].astype(np.float32) if isinstance(d["speech"], np.ndarray) else np.array(d["speech"], dtype=np.float32),
+    "speech": lambda d: d["speech"].astype(np.float32)
+    if isinstance(d["speech"], np.ndarray) else np.array(d["speech"], dtype=np.float32),
     "text": lambda d: tokenize(f"{owsm_language}<asr><notimestamps> {d['transcription']}"),
     "text_ctc": lambda d: tokenize(d['transcription']),
     "text_prev": lambda d: tokenize("<na>"),
     "text_raw": lambda d: d['transcription'],
 }
 
-# Eval dataset is only for inference/transcript generation
 test_dataset = ez.dataset.ESPnetEZDataset(eval_hf, data_info=test_data_info)
 
-# Generate transcripts for all test/eval data
+# -------------------------------------------------------------------------
+# Load fine-tuned weights into the seq2seq model
+# -------------------------------------------------------------------------
 print("\n" + "="*80)
-print("Generating transcripts for test/eval data...")
+print("Loading fine-tuned checkpoint...")
 print("="*80)
 
-# Load finetuned model
 if not os.path.isfile(MODEL_CHECKPOINT):
     raise FileNotFoundError(f"Checkpoint not found at {MODEL_CHECKPOINT}")
 
@@ -151,38 +154,48 @@ pretrained_model.s2t_model.float().eval()
 print(f"Model device: {pretrained_model.device}")
 print(f"Total test samples: {len(eval_hf)}")
 
-# Generate transcripts for all eval samples and save to CSV
+# -------------------------------------------------------------------------
+# Inference loop
+# -------------------------------------------------------------------------
+print("\n" + "="*80)
+print("Generating transcripts for test/eval data...")
+print("="*80)
+
 predictions_data = []
 
 for i in tqdm(range(len(eval_hf))):
-    id, sample = test_dataset.__getitem__(i)
+    uid, sample = test_dataset.__getitem__(i)
     try:
-        pred = pretrained_model(sample['speech'])
-        predicted_text = pred[0][3]
-        reference_text = sample['text_raw']
-        file_id = eval_hf[i]['file_id']
+        # Speech2Text returns a list of n-best results.
+        # For seq2seq OWSM, each n-best item is usually: (text, token, token_int, hyp)
+        nbest = pretrained_model(sample["speech"])
+        predicted_text = nbest[0][3]
+
+        reference_text = sample["text_raw"]
+        file_id = eval_hf[i]["file_id"]
         
         predictions_data.append({
             "File-id": file_id,
-            "PREDICTED": predicted_text
-            # "REFERENCE": reference_text
+            "PREDICTED": predicted_text,
+            # "REFERENCE": reference_text,
         })
-        
-        # Print progress every 10 samples
+
+        # Optional: light logging
         if (i + 1) % 10 == 0:
             print(f"Processed {i + 1}/{len(eval_hf)} samples...")
-            
+
     except Exception as e:
         print(f"Error processing sample {i} (file_id: {eval_hf[i]['file_id']}): {e}")
-        # Still add to CSV with error message
         predictions_data.append({
-            "File-id": eval_hf[i]['file_id'],
-            "PREDICTED": f"ERROR: {str(e)}"
-            # "REFERENCE": eval_hf[i]['transcription'] if i < len(eval_hf) else "N/A"
+            "File-id": eval_hf[i]["file_id"],
+            "PREDICTED": f"ERROR: {str(e)}",
+            # "REFERENCE": eval_hf[i]["transcription"] if i < len(eval_hf) else "N/A",
         })
         continue
 
-# Save predictions to CSV
+# -------------------------------------------------------------------------
+# Save predictions
+# -------------------------------------------------------------------------
 predictions_df = pd.DataFrame(predictions_data)
 output_csv = "./test_predictions.csv"
 predictions_df.to_csv(output_csv, index=False)

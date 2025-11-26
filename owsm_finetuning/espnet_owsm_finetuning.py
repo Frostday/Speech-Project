@@ -8,19 +8,21 @@ import json
 import glob
 import os
 import pandas as pd
-from espnet2.bin.s2t_inference_ctc import Speech2Text as CTCInfer
+
+from espnet2.bin.s2t_inference import Speech2Text
 
 print("Successfully imported espnet ez")
 print("ESPnet version: ", espnet.__version__)
 
-FINETUNE_MODEL = "espnet/owsm_ctc_v4_1B"
+FINETUNE_MODEL = "espnet/owsm_v4_medium_1B"
 owsm_language = "<eng>"
-pretrained_model = CTCInfer.from_pretrained(
+
+pretrained_model = Speech2Text.from_pretrained(
     FINETUNE_MODEL,
     device="cuda",
     dtype="bfloat16",
     lang_sym=owsm_language,
-    task_sym='<asr>'
+    beam_size=10,
 )
 
 pretrain_config = vars(pretrained_model.s2t_train_args)
@@ -140,18 +142,8 @@ def items_to_dataset(items):
 # Use train data for training and dev data for validation
 eval_hf = items_to_dataset(eval_items)
 
-# Alternative: Use dev data for training (commented out)
-# dev_hf = items_to_dataset(dev_items)
-# # Split dev data into train (80%) and validation (20%)
-# dev_hf = dev_hf.shuffle(seed=42)
-# split = dev_hf.train_test_split(test_size=0.2, seed=42)
-# train_hf = split["train"]
-# valid_hf = split["test"]
-
-# Use train data for training and dev data for validation
 train_hf = items_to_dataset(train_items)
 train_hf = train_hf.shuffle(seed=42)
-# Use dev data for validation
 dev_hf = items_to_dataset(dev_items)
 valid_hf = dev_hf
 
@@ -169,18 +161,16 @@ print(f"File ID: {example_file_id}")
 print(f"Transcript: {example_transcript}")
 print("="*80 + "\n")
 
-# Data info for training and validation
 data_info = {
-    "prefix": lambda d, lang_task_tokens=tokenize(f"{owsm_language}<asr>")[:2].copy(): lang_task_tokens.copy(),
+    # "prefix": lambda d, lang_task_tokens=tokenize(f"{owsm_language}<asr>")[:2].copy(): lang_task_tokens.copy(),
     "speech": lambda d: d["speech"].astype(np.float32) if isinstance(d["speech"], np.ndarray) else np.array(d["speech"], dtype=np.float32),
     "text": lambda d: tokenize(f"{owsm_language}<asr><notimestamps> {d['transcription']}"),
     "text_ctc": lambda d: tokenize(d['transcription']),
     "text_prev": lambda d: tokenize("<na>"),
 }
 
-# Data info for test (includes raw text)
 test_data_info = {
-    "prefix": lambda d, lang_task_tokens=tokenize(f"{owsm_language}<asr>")[:2].copy(): lang_task_tokens.copy(),
+    # "prefix": lambda d, lang_task_tokens=tokenize(f"{owsm_language}<asr>")[:2].copy(): lang_task_tokens.copy(),
     "speech": lambda d: d["speech"].astype(np.float32) if isinstance(d["speech"], np.ndarray) else np.array(d["speech"], dtype=np.float32),
     "text": lambda d: tokenize(f"{owsm_language}<asr><notimestamps> {d['transcription']}"),
     "text_ctc": lambda d: tokenize(d['transcription']),
@@ -189,10 +179,8 @@ test_data_info = {
 }
 
 # Create ESPnetEZ datasets
-# Use train data (split) for training and validation
 train_dataset = ez.dataset.ESPnetEZDataset(train_hf, data_info=data_info)
 valid_dataset = ez.dataset.ESPnetEZDataset(valid_hf, data_info=data_info)
-# Eval dataset is only for inference/transcript generation
 test_dataset = ez.dataset.ESPnetEZDataset(eval_hf, data_info=test_data_info)
 
 print("Train dataset first item:", train_dataset[0])
@@ -215,7 +203,7 @@ os.makedirs(STATS_DIR, exist_ok=True)
 finetune_config = ez.config.update_finetune_config(
     's2t',
     pretrain_config,
-    f"/ocean/projects/cis250187p/dgarg2/Speech-Project/owsm_ctc_finetuning/config/finetune.yaml"
+    "/ocean/projects/cis250187p/dgarg2/Speech-Project/owsm_finetuning/config/finetune.yaml"
 )
 
 trainer = ez.Trainer(
@@ -231,5 +219,4 @@ trainer = ez.Trainer(
 )
 
 trainer.collect_stats()
-
 trainer.train()

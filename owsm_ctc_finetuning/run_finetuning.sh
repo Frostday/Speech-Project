@@ -13,6 +13,6 @@ export HF_DATASETS_CACHE="$HF_HOME/datasets"
 export TRANSFORMERS_CACHE="$HF_HOME/transformers"
 mkdir -p "$HUGGINGFACE_HUB_CACHE" "$HF_DATASETS_CACHE" "$TRANSFORMERS_CACHE"
 
-. /ocean/projects/cis250187p/dgarg2/espnet/tools/activate_python.sh && python /ocean/projects/cis250187p/dgarg2/Speech-Project/owsm_finetuning/espnet_owsm_finetuning.py
+. /ocean/projects/cis250187p/dgarg2/espnet/tools/activate_python.sh && python /ocean/projects/cis250187p/dgarg2/Speech-Project/owsm_ctc_finetuning/espnet_owsm_finetuning.py
 
-# . /ocean/projects/cis250187p/dgarg2/espnet/tools/activate_python.sh && python /ocean/projects/cis250187p/dgarg2/Speech-Project/owsm_finetuning/espnet_owsm_finetuning.py > logs.txt 2> errors.txt
+# . /ocean/projects/cis250187p/dgarg2/espnet/tools/activate_python.sh && python /ocean/projects/cis250187p/dgarg2/Speech-Project/owsm_ctc_finetuning/espnet_owsm_finetuning.py > logs.txt 2> errors.txt
