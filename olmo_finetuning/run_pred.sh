@@ -8,3 +8,5 @@
 #SBATCH -e output_pred.err
 
 /ocean/projects/cis240137p/dgarg2/miniconda3/envs/genai/bin/python -u /ocean/projects/cis250187p/dgarg2/Speech-Project/olmo_finetuning/predict.py
+
+# /ocean/projects/cis240137p/dgarg2/miniconda3/envs/genai/bin/python -u /ocean/projects/cis250187p/dgarg2/Speech-Project/olmo_finetuning/predict.py > output_pred.log 2> output_pred.err

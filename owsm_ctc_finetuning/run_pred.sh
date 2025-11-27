@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH -N 1
 #SBATCH -p GPU-shared
-#SBATCH -t 12:00:00
+#SBATCH -t 18:00:00
 #SBATCH --gpus=h100-80:1
 #SBATCH -n 2
 #SBATCH --output=output_pred.log

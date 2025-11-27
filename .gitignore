@@ -1,6 +1,9 @@
 baseline/output.log
 baseline/output.err
 
+baseline_2/output.log
+baseline_2/output.err
+
 olmo_finetuning/train_data.csv
 olmo_finetuning/output.log
 olmo_finetuning/output.err
@@ -25,3 +28,9 @@ owsm_finetuning/output_pred.err
 owsm_finetuning/exp/
 owsm_finetuning/logs.txt
 owsm_finetuning/errors.txt
+
+owsm_ctc_prefix/output.log
+owsm_ctc_prefix/output.err
+
+owsm_prefix/output.log
+owsm_prefix/output.err

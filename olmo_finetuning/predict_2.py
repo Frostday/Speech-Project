@@ -49,11 +49,8 @@ def correct_asr(asr: str) -> str:
 
 print(correct_asr("We can see that factories and vehicles make pollution. This this pollution make acid particles because these acid particles are are in the smoke of the factories and the vehicles. and after these acid particles are carried by the by wind. and in all the country, these acid particles fall in as dusts, but others go in the cloud, and when it's when there is rain, these acid particles mix with the cloud water, are falling and hurts the environment and the planet."))
 
-df = pd.read_csv("/ocean/projects/cis250187p/dgarg2/Speech-Project/baseline/baseline.csv")
-print(len(df))
-asr_text = df['ASR Pred'].tolist()
-ref_llm = df['LLM Reference'].tolist()
-ref_asr = df['ASR Reference'].tolist()
+df = pd.read_csv("/ocean/projects/cis250187p/dgarg2/Speech-Project/owsm_finetuning/test_predictions.csv")
+asr_text = df['PREDICTED'].tolist()
 pred_llm = []
 for i in tqdm(asr_text):
     result = correct_asr(i)
@@ -61,16 +58,12 @@ for i in tqdm(asr_text):
         result = result[len("Here's the corrected version:"):]
     pred_llm.append(result)
 df['Finetuned LLM Pred'] = pred_llm
-df.to_csv("pretrained_owsm_ctc_finetuned_olmo.csv", index=False)
-print("Pretrained OWSM CTC + Finetuned Olmo done")
+df.to_csv("finetuned_owsm_finetuned_olmo.csv", index=False)
 
-df = pd.read_csv("/ocean/projects/cis250187p/dgarg2/Speech-Project/baseline_2/baseline_2.csv")
-print(len(df))
-# df = df[df['LLM Pred'].apply(lambda x: isinstance(x, str))]
-# print(len(df))
-asr_text = df['ASR Pred'].tolist()
-ref_llm = df['LLM Reference'].tolist()
-ref_asr = df['ASR Reference'].tolist()
+df = pd.read_csv("/ocean/projects/cis250187p/dgarg2/Speech-Project/owsm_ctc_finetuning/test_predictions.csv")
+# DATA CLEANING for OWSM CTC
+df["PREDICTED"] = df["PREDICTED"].str.split(n=1).str[1].fillna("")
+asr_text = df['PREDICTED'].tolist()
 pred_llm = []
 for i in tqdm(asr_text):
     result = correct_asr(i)
@@ -78,5 +71,4 @@ for i in tqdm(asr_text):
         result = result[len("Here's the corrected version:"):]
     pred_llm.append(result)
 df['Finetuned LLM Pred'] = pred_llm
-df.to_csv("pretrained_owsm_finetuned_olmo.csv", index=False)
-print("Pretrained OWSM + Finetuned Olmo done")
+df.to_csv("finetuned_owsm_ctc_finetuned_olmo.csv", index=False)
